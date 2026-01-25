@@ -200,4 +200,4 @@ kubectl apply -k k8s/
 
 ## License
 
-MIT
+GNU
