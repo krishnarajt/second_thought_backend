@@ -31,7 +31,9 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/second_thought_backend:git-${{ github.sha }}
 
       - run: |
-          sed -i "s|image: ghcr.io/.*/second_thought_backend:.*|image: ghcr.io/${{ github.repository_owner }}/second_thought_backend:git-${{ github.sha }}|" k8s/base/deployment.yaml
+          sed -i \
+            "s|ghcr.io/.*/second-thought-backend:[^ ]*|ghcr.io/${{ github.repository_owner }}/second-thought-backend:git-${{ github.sha }}|" \
+            k8s/base/deployment.yaml
 
       - run: |
           git config user.name "github-actions"
