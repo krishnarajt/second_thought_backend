@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: second-thought-backend
 spec:
+  type: NodePort
   selector:
     app: second-thought-backend
   ports:
