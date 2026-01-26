@@ -7,5 +7,5 @@ python-jose[cryptography]==3.3.0
 PyJWT==2.8.0
 httpx==0.26.0
 pytz==2024.1
-python-multipart==0.0.6
+python-multipart==0.0.18
 alembic==1.13.1
