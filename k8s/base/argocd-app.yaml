@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/krishnarajt/second-thought-backend
+    repoURL: https://github.com/krishnarajt/second_thought_backend
     targetRevision: main
     path: k8s/overlays/prod
   destination:
