@@ -4,7 +4,6 @@ sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 pydantic==2.5.3
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 PyJWT==2.8.0
 httpx==0.26.0
 pytz==2024.1

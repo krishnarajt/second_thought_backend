@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 import os
 import jwt
-from passlib.context import CryptContext
+import hashlib
+import secrets
 from sqlalchemy.orm import Session
 
 from app.db.models import User, RefreshToken
@@ -13,15 +14,46 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing configuration
+SALT_LENGTH = 32  # 32 bytes = 256 bits
+HASH_ITERATIONS = 100000  # OWASP recommended minimum
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a password against a stored hash"""
+    try:
+        # Format: iterations$salt$hash
+        parts = hashed_password.split("$")
+        if len(parts) != 3:
+            return False
+
+        iterations = int(parts[0])
+        salt = bytes.fromhex(parts[1])
+        stored_hash = parts[2]
+
+        # Hash the provided password with the same salt and iterations
+        computed_hash = hashlib.pbkdf2_hmac(
+            "sha256", plain_password.encode("utf-8"), salt, iterations
+        ).hex()
+
+        # Constant-time comparison to prevent timing attacks
+        return secrets.compare_digest(computed_hash, stored_hash)
+    except (ValueError, IndexError):
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash a password using PBKDF2-SHA256"""
+    # Generate a random salt
+    salt = secrets.token_bytes(SALT_LENGTH)
+
+    # Hash the password
+    password_hash = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt, HASH_ITERATIONS
+    ).hex()
+
+    # Return format: iterations$salt$hash
+    return f"{HASH_ITERATIONS}${salt.hex()}${password_hash}"
 
 
 def create_access_token(user_id: int, expires_delta: Optional[timedelta] = None) -> str:
@@ -29,34 +61,22 @@ def create_access_token(user_id: int, expires_delta: Optional[timedelta] = None)
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode = {
-        "sub": str(user_id),
-        "exp": expire,
-        "type": "access"
-    }
+
+    to_encode = {"sub": str(user_id), "exp": expire, "type": "access"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_refresh_token(db: Session, user_id: int) -> str:
     expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    
-    to_encode = {
-        "sub": str(user_id),
-        "exp": expires_at,
-        "type": "refresh"
-    }
+
+    to_encode = {"sub": str(user_id), "exp": expires_at, "type": "refresh"}
     token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    
+
     # Store in database
-    db_token = RefreshToken(
-        user_id=user_id,
-        token=token,
-        expires_at=expires_at
-    )
+    db_token = RefreshToken(user_id=user_id, token=token, expires_at=expires_at)
     db.add(db_token)
     db.commit()
-    
+
     return token
 
 
@@ -79,17 +99,21 @@ def verify_refresh_token(db: Session, token: str) -> Optional[int]:
         if payload.get("type") != "refresh":
             return None
         user_id = int(payload.get("sub"))
-        
+
         # Check if token exists in database
-        db_token = db.query(RefreshToken).filter(
-            RefreshToken.token == token,
-            RefreshToken.user_id == user_id,
-            RefreshToken.expires_at > datetime.utcnow()
-        ).first()
-        
+        db_token = (
+            db.query(RefreshToken)
+            .filter(
+                RefreshToken.token == token,
+                RefreshToken.user_id == user_id,
+                RefreshToken.expires_at > datetime.utcnow(),
+            )
+            .first()
+        )
+
         if not db_token:
             return None
-            
+
         return user_id
     except jwt.ExpiredSignatureError:
         return None
@@ -122,10 +146,7 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[Use
 
 def create_user(db: Session, username: str, password: str) -> User:
     hashed_password = get_password_hash(password)
-    db_user = User(
-        username=username,
-        password_hash=hashed_password
-    )
+    db_user = User(username=username, password_hash=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

@@ -62,7 +62,7 @@ def verify_link_code(db: Session, code: str, telegram_chat_id: str, telegram_use
         TelegramLinkCode.code == code,
         TelegramLinkCode.expires_at > datetime.utcnow()
     ).first()
-    
+    print(link_code)
     if not link_code:
         return None
     
