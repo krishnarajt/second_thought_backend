@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: ghcr.io/krishnarajt/second-thought-backend:git-f00195d5543cfe9078acd2ed80246392c860ce11
+          image: ghcr.io/krishnarajt/second-thought-backend:git-c68462ecc524723a9b46acfddc095ad3c443290a
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
