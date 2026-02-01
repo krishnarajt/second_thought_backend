@@ -2,6 +2,11 @@
 
 Backend API for the Second Thought timetable app with Telegram bot integration for notifications.
 
+![alt text](msedge_xws0M1KSZ2.png)
+![alt text](msedge_29BKDCqpzP.png)
+![alt text](msedge_qku6KYXHZc.png)
+![alt text](msedge_UjKM4JaCpE.png)
+
 ## Features
 
 - 🔐 JWT Authentication (access + refresh tokens)
